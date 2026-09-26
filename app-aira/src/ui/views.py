@@ -1,1 +1,0 @@
-# Montagem da tela principal juntando os componentes

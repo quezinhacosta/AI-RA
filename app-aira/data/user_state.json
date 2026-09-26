@@ -1,31 +1,21 @@
 {
   "profile": {
-    "name": "Quezia",
-    "core_anchors": [
-      "Treino regular",
-      "Sono 7h+",
-      "Foco em metas"
-    ]
+    "name": "",
+    "onboarding_completed": false
   },
-  "current_state": {
-    "energy_level": "media",
-    "financial_runway_status": "estavel",
-    "current_operational_mode": "FOCO_TOTAL"
+  "primary_goal": {
+    "title": "",
+    "target_value": 0.0,
+    "current_saved": 0.0,
+    "monthly_target": 0.0,
+    "deadline_horizon": ""
   },
-  "primary_goals": {
-    "financial": {
-      "target": "Entrada do Apartamento",
-      "target_value": 60000,
-      "current_saved": 5000,
-      "monthly_target_savings": 1500
-    },
-    "career": {
-      "target": "Aceleração Profissional e Destaque",
-      "current_bottleneck": "Gestão de tempo entre entregas e projetos de impacto"
-    }
-  },
-  "constraints": {
-    "weekly_free_hours": 12,
-    "non_negotiable_budget_ceiling": 400
+  "runtime_state": {
+    "current_operational_mode": "MANUTENCAO",
+    "energy_level": "indefinido",
+    "weekly_habits_target": 0,
+    "habits_completed_this_week": 0,
+    "financial_logs": [],
+    "user_notes": []
   }
 }

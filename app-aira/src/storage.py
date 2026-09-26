@@ -1,7 +1,4 @@
-# Leitura e gravação atômica dos JSONs
-
 import json
-import os
 import shutil
 import sys
 from pathlib import Path
@@ -9,60 +6,49 @@ from pathlib import Path
 
 class StorageService:
     def __init__(self, data_dir: str = None):
-        # Determina a raiz real do projeto de forma compatível com dev e com o executável (.exe)
         if data_dir:
             self.base_data_path = Path(data_dir)
         else:
             if getattr(sys, "frozen", False):
-                # Rodando via PyInstaller (.exe)
                 app_root = Path(sys.executable).parent
             else:
-                # Rodando em modo de desenvolvimento (Python puro)
                 app_root = Path(__file__).resolve().parent.parent
 
             self.base_data_path = app_root / "data"
 
-        # Garante que a pasta data/ existe
         self.base_data_path.mkdir(parents=True, exist_ok=True)
 
         self.state_file = self.base_data_path / "user_state.json"
         self.history_file = self.base_data_path / "chat_history.json"
 
-        # Inicializa arquivos caso não existam
         self._ensure_files_exist()
 
     def _get_default_user_state(self) -> dict:
-        """Estado padrão inicial do usuário caso o arquivo não exista."""
+        """Estado inicial neutro à espera das informações voluntárias do utilizador."""
         return {
             "profile": {
-                "name": "Quezia",
-                "core_anchors": ["Treino regular", "Sono 7h+", "Foco em metas"],
+                "name": "",
+                "onboarding_completed": False,
             },
-            "current_state": {
-                "energy_level": "media",
-                "financial_runway_status": "estavel",
-                "current_operational_mode": "FOCO_TOTAL",
+            "primary_goal": {
+                "title": "Definir Meta Principal",
+                "target_value": 0.0,
+                "current_saved": 0.0,
+                "monthly_target": 0.0,
+                "deadline_horizon": "A definir",
             },
-            "primary_goals": {
-                "financial": {
-                    "target": "Entrada do Apartamento",
-                    "target_value": 60000,
-                    "current_saved": 5000,
-                    "monthly_target_savings": 1500,
-                },
-                "career": {
-                    "target": "Aceleração Profissional e Destaque",
-                    "current_bottleneck": "Gestão de tempo entre entregas e projetos de impacto",
-                },
-            },
-            "constraints": {
-                "weekly_free_hours": 12,
-                "non_negotiable_budget_ceiling": 400,
+            "runtime_state": {
+                "current_operational_mode": "MANUTENCAO",
+                "energy_level": "normal",
+                "weekly_habits_target": 0,
+                "habits_completed_this_week": 0,
+                "financial_logs": [],
+                "user_notes": [],
             },
         }
 
     def _ensure_files_exist(self):
-        """Cria os arquivos iniciais se for a primeira execução."""
+        """Garante a criação inicial dos ficheiros JSON."""
         if not self.state_file.exists():
             self.save_user_state(self._get_default_user_state())
 
@@ -70,7 +56,7 @@ class StorageService:
             self.save_chat_history([])
 
     def load_user_state(self) -> dict:
-        """Carrega o arquivo user_state.json com tratamento de erros."""
+        """Lê o ficheiro user_state.json com fallback para o estado padrão."""
         try:
             with open(self.state_file, "r", encoding="utf-8") as f:
                 return json.load(f)
@@ -80,20 +66,19 @@ class StorageService:
             return default_state
 
     def save_user_state(self, state: dict):
-        """Gravação atômica: escreve em arquivo temporário antes de substituir o original."""
+        """Gravação atómica: grava num ficheiro temporário antes de substituir o original."""
         temp_file = self.state_file.with_suffix(".tmp")
         try:
             with open(temp_file, "w", encoding="utf-8") as f:
                 json.dump(state, f, indent=2, ensure_ascii=False)
-            # Substituição atômica no sistema de arquivos
             shutil.move(temp_file, self.state_file)
         except Exception as e:
             if temp_file.exists():
                 temp_file.unlink()
-            raise IOError(f"Falha ao salvar user_state.json: {e}")
+            raise IOError(f"Falha ao gravar user_state.json: {e}")
 
     def save_chat_history(self, history: list):
-        """Salva a lista completa de histórico no arquivo chat_history.json."""
+        """Grava a lista completa de mensagens de conversa no disco."""
         temp_file = self.history_file.with_suffix(".tmp")
         try:
             with open(temp_file, "w", encoding="utf-8") as f:
@@ -102,26 +87,10 @@ class StorageService:
         except Exception as e:
             if temp_file.exists():
                 temp_file.unlink()
-            raise IOError(f"Falha ao salvar chat_history.json: {e}")
-
-    def update_state_patch(self, patch: dict) -> dict:
-        """Aplica alterações parciais (patch) no estado atual e salva automaticamente."""
-        current_state = self.load_user_state()
-
-        def deep_merge(source, destination):
-            for key, value in source.items():
-                if isinstance(value, dict) and key in destination and isinstance(destination[key], dict):
-                    deep_merge(value, destination[key])
-                else:
-                    destination[key] = value
-            return destination
-
-        updated_state = deep_merge(patch, current_state)
-        self.save_user_state(updated_state)
-        return updated_state
+            raise IOError(f"Falha ao gravar chat_history.json: {e}")
 
     def load_chat_history(self, limit: int = 20) -> list:
-        """Carrega as últimas mensagens registradas."""
+        """Carrega as mensagens recentes da conversa."""
         try:
             with open(self.history_file, "r", encoding="utf-8") as f:
                 history = json.load(f)
@@ -130,16 +99,54 @@ class StorageService:
             return []
 
     def append_chat_message(self, role: str, content: str):
-        """Registra uma nova mensagem no histórico local."""
+        """Regista uma nova mensagem no histórico mantendo o teto recente."""
         history = self.load_chat_history(limit=100)
         history.append({"role": role, "content": content})
+        self.save_chat_history(history)
 
-        temp_file = self.history_file.with_suffix(".tmp")
-        try:
-            with open(temp_file, "w", encoding="utf-8") as f:
-                json.dump(history, f, indent=2, ensure_ascii=False)
-            shutil.move(temp_file, self.history_file)
-        except Exception as e:
-            if temp_file.exists():
-                temp_file.unlink()
-            raise IOError(f"Falha ao salvar chat_history.json: {e}")
+    def ingest_information(self, incoming_data: dict) -> dict:
+        """Ingere, consolida e persiste de forma atómica todas as mutações vindas do chatbot."""
+        current_state = self.load_user_state()
+
+        # 1. Atualizações de perfil (nome, onboarding, etc.)
+        if "profile" in incoming_data and isinstance(incoming_data["profile"], dict):
+            current_state["profile"].update(incoming_data["profile"])
+
+        # 2. Definição ou ajustamento da meta primordial
+        if "primary_goal" in incoming_data and isinstance(incoming_data["primary_goal"], dict):
+            current_state["primary_goal"].update(incoming_data["primary_goal"])
+
+        # 3. Mutações de estado de execução (modo ativo, energia, etc.)
+        if "runtime_state" in incoming_data and isinstance(incoming_data["runtime_state"], dict):
+            current_state["runtime_state"].update(incoming_data["runtime_state"])
+
+        # 4. Registos financeiros (despesas e poupanças/aportes)
+        if "financial_logs" in incoming_data and isinstance(incoming_data["financial_logs"], list):
+            logs = current_state["runtime_state"].setdefault("financial_logs", [])
+            for entry in incoming_data["financial_logs"]:
+                logs.append(entry)
+                # Se for aporte, incrementa diretamente o acumulado da meta primordial
+                if entry.get("type") == "saving":
+                    amount = float(entry.get("amount", 0.0))
+                    current_saved = float(current_state["primary_goal"].get("current_saved", 0.0))
+                    current_state["primary_goal"]["current_saved"] = current_saved + amount
+
+        # 5. Conclusão de hábitos na semana (ex.: treinos)
+        if "habits_completed" in incoming_data:
+            habits = incoming_data["habits_completed"]
+            if isinstance(habits, list):
+                completed = current_state["runtime_state"].get("habits_completed_this_week", 0)
+                current_state["runtime_state"]["habits_completed_this_week"] = completed + len(habits)
+
+        # 6. Notas e preferências aprendidas sobre a rotina
+        if "user_notes" in incoming_data:
+            notes = current_state["runtime_state"].setdefault("user_notes", [])
+            new_note = incoming_data["user_notes"]
+            if isinstance(new_note, list):
+                notes.extend(new_note)
+            elif isinstance(new_note, str) and new_note not in notes:
+                notes.append(new_note)
+
+        # Gravação atómica final
+        self.save_user_state(current_state)
+        return current_state

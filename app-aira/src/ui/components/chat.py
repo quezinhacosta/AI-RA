@@ -14,6 +14,7 @@ class ChatStreamComponent(ft.Column):
         self.expand = True
         self.spacing = 14
 
+        # Feed rolável de mensagens
         self.messages_list = ft.ListView(
             expand=True,
             spacing=12,
@@ -21,18 +22,24 @@ class ChatStreamComponent(ft.Column):
             padding=ft.Padding(0, 0, 8, 0),
         )
 
-        self.input_field = ft.TextField(
-            hint_text="Conta-me o teu dia, regista gastos ou pede conselhos de foco...",
+        # Campo de texto limpo, sem argumentos conflitantes
+        self.input_text = ft.TextField(
+            hint_text="Digite sua mensagem e pressione Enter...",
             hint_style=ft.TextStyle(size=12, color=AppTheme.TEXT_MUTED),
             text_size=13,
             color=AppTheme.TEXT_MAIN,
-            bgcolor=AppTheme.CARD_TRANSLUCENT,
-            border_radius=22,
-            border_color=ft.Colors.TRANSPARENT,
-            focused_border_color=AppTheme.PRIMARY_PINK,
-            content_padding=ft.Padding(18, 12, 18, 12),
+            border=ft.InputBorder.NONE,
+            content_padding=ft.Padding(18, 10, 18, 10),
             expand=True,
             on_submit=self._handle_send_click,
+        )
+
+        # Container que aplica o arredondamento e fundo suave com segurança
+        self.input_field = ft.Container(
+            content=self.input_text,
+            bgcolor=AppTheme.CARD_TRANSLUCENT,
+            border_radius=22,
+            expand=True,
         )
 
         self.send_button = ft.IconButton(
@@ -60,14 +67,14 @@ class ChatStreamComponent(ft.Column):
         ]
 
         self._add_assistant_message(
-            "Olá! Estou pronta para alinhar a tua rotina, rever o orçamento da semana ou proteger o teu descanso. Por onde queres começar hoje?"
+            "Olá! Estou pronta para te acompanhar hoje. Como está o teu nível de energia e o teu plano de metas para hoje?"
         )
 
     def _build_action_chips(self) -> ft.Row:
         actions = [
-            ("⚡ Rever modo do dia", "Quero rever as minhas prioridades de hoje conforme o meu nível de cansaço."),
-            ("💰 Registar gasto", "Tive um gasto imprevisto de "),
-            ("🏋️ Atualizar treinos", "Concluí mais um treino hoje com sucesso!"),
+            ("⚡ Rever modo do dia", "Hoje o dia foi bastante exigente e sinto um nível de cansaço elevado."),
+            ("💰 Registar gasto", "Regista uma despesa não prevista de R$ "),
+            ("🏋️ Registar treino", "Concluí o meu treino de pernas e cárdio com sucesso hoje!"),
         ]
 
         return ft.Row(
@@ -91,46 +98,53 @@ class ChatStreamComponent(ft.Column):
         )
 
     def _fill_and_send(self, prompt: str):
-        self.input_field.value = prompt
-        self.input_field.focus()
+        self.input_text.value = prompt
         self.update()
 
     def _handle_send_click(self, e):
-        text = (self.input_field.value or "").strip()
+        text = (self.input_text.value or "").strip()
         if not text:
             return
 
-        self.input_field.value = ""
-        self.input_field.disabled = True
+        self.input_text.value = ""
+        self.input_text.disabled = True
         self.send_button.disabled = True
 
         self._add_user_message(text)
         self.update()
 
+        # Executa em segundo plano para não congelar o layout durante a inferência
         threading.Thread(target=self._process_ai_response, args=(text,), daemon=True).start()
 
     def _process_ai_response(self, user_text: str):
         try:
             if self.groq_service and self.prompt_engine:
-                messages = self.prompt_engine.build_context_messages(user_text)
+                # 1. Carrega histórico e constrói o prompt adaptativo
+                history = self.storage.load_chat_history(limit=8) if self.storage else []
+                messages = self.prompt_engine.build_context_messages(user_text, history=history)
+
+                # 2. Chama a Groq e extrai mutações de estado
                 response_text, state_update = self.groq_service.chat_completion(messages)
 
-                if state_update and self.storage:
-                    new_state = self.storage.update_state_patch(state_update)
-                    if self.on_state_updated:
-                        self.on_state_updated(new_state)
+                # 3. Ingestão e persistência atómica no disco
+                if self.storage:
+                    self.storage.append_chat_message("user", user_text)
+                    self.storage.append_chat_message("assistant", response_text)
+
+                    if state_update:
+                        new_state = self.storage.ingest_information(state_update)
+                        self.prompt_engine.update_internal_state(new_state)
+                        if self.on_state_updated:
+                            self.on_state_updated(new_state)
 
                 self._add_assistant_message(response_text)
             else:
-                self._add_assistant_message(
-                    f"Mensagem recebida: '{user_text}'. (Modo offline)."
-                )
+                self._add_assistant_message(f"Mensagem processada (Modo offline): '{user_text}'.")
         except Exception as ex:
-            self._add_assistant_message(f"Ocorreu um erro: {str(ex)}")
+            self._add_assistant_message(f"Ocorreu uma falha na resposta da IA: {str(ex)}")
         finally:
             self.input_field.disabled = False
             self.send_button.disabled = False
-            self.input_field.focus()
             self.update()
 
     def _add_user_message(self, text: str):
@@ -172,7 +186,7 @@ class ChatStreamComponent(ft.Column):
                         top_left=4, top_right=18, bottom_left=18, bottom_right=18
                     ),
                     padding=ft.Padding(16, 10, 16, 10),
-                    expand=True,  # Ocupa o espaço natural da linha sem quebrar o layout
+                    expand=True,
                     content=ft.Text(
                         text,
                         size=13,
