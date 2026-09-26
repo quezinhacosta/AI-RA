@@ -1,0 +1,3 @@
+flet 
+groq 
+python-dotenv

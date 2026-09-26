@@ -1,0 +1,31 @@
+{
+  "profile": {
+    "name": "Quezia",
+    "core_anchors": [
+      "Treino regular",
+      "Sono 7h+",
+      "Foco em metas"
+    ]
+  },
+  "current_state": {
+    "energy_level": "media",
+    "financial_runway_status": "estavel",
+    "current_operational_mode": "FOCO_TOTAL"
+  },
+  "primary_goals": {
+    "financial": {
+      "target": "Entrada do Apartamento",
+      "target_value": 60000,
+      "current_saved": 5000,
+      "monthly_target_savings": 1500
+    },
+    "career": {
+      "target": "Aceleração Profissional e Destaque",
+      "current_bottleneck": "Gestão de tempo entre entregas e projetos de impacto"
+    }
+  },
+  "constraints": {
+    "weekly_free_hours": 12,
+    "non_negotiable_budget_ceiling": 400
+  }
+}

@@ -1,0 +1,1 @@
+# Configurações e caminhos de arquivos
