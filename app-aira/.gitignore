@@ -1,41 +1,83 @@
-# Build and Release Folders
-bin-debug/
-bin-release/
-[Oo]bj/
-[Bb]in/
+# ==========================================
+# SEGREDOS & VARIÁVEIS DE AMBIENTE (CRÍTICO)
+# ==========================================
+.env
+.env.*
+!.env.example
+*.key
+*.pem
 
-# Other files and folders
-.settings/
+# ==========================================
+# DADOS LOCAIS DO UTILIZADOR / RUNTIME
+# ==========================================
+# Evita subir dados pessoais reais, mas mantém a pasta e o exemplo
+data/*.json
+data/*.tmp
+!data/.gitkeep
+!data/user_state.example.json
 
-# Executables
-*.swf
-*.air
-*.ipa
-*.apk
+# Ficheiros temporários de escrita atómica do StorageService
+*.tmp
 
-# Project files, i.e. `.project`, `.actionScriptProperties` and `.flexProperties`
-# should NOT be excluded as they contain compiler settings and other important
-# information for Eclipse / Flash Builder.
-
-# Virtualenv
-# https://realpython.com/python-virtual-environments-a-primer/#the-virtualenv-project
+# ==========================================
+# AMBIENTES VIRTUAIS (VENV / CONDA / POETRY)
+# ==========================================
 .venv/
 venv/
+env/
+ENV/
+env.bak/
+venv.bak/
 .python-version
-
-# pyenv: Simple Python Version Management
 pyvenv.cfg
-
-# pip: package installer for Python
 pip-selfcheck.json
+pip-log.txt
 
-# Custom python interpreter
-.Python
-[Bb]in
-[Ii]nclude
-[Ll]ib
-[Ll]ib64
-[Ll]ocal
-[Ss]cripts
+# ==========================================
+# BYTECODE & CACHE PYTHON
+# ==========================================
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.pytest_cache/
+.coverage
+htmlcov/
+.mypy_cache/
+.ruff_cache/
 
-.env
+# ==========================================
+# FLET / FLUTTER / BUILDS DESKTOP
+# ==========================================
+build/
+dist/
+*.spec
+.flet/
+flet/
+flet-build/
+*.app/
+*.exe
+*.deb
+*.rpm
+*.apk
+*.aab
+
+# ==========================================
+# IDES, EDITORES & SISTEMA OPERACIONAL
+# ==========================================
+# VS Code
+.vscode/
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+*.code-workspace
+
+# JetBrains (PyCharm)
+.idea/
+
+# Sistema Operacional
+.DS_Store
+Thumbs.db
+*.bak
+*~
+*.log

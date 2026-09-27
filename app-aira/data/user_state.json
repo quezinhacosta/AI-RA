@@ -4,8 +4,8 @@
     "onboarding_completed": false
   },
   "primary_goal": {
-    "title": "",
-    "target_value": 0.0,
+    "title": "Comprar apartamento",
+    "target_value": 60000.0,
     "current_saved": 0.0,
     "monthly_target": 0.0,
     "deadline_horizon": ""
