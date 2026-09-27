@@ -1,0 +1,41 @@
+# Build and Release Folders
+bin-debug/
+bin-release/
+[Oo]bj/
+[Bb]in/
+
+# Other files and folders
+.settings/
+
+# Executables
+*.swf
+*.air
+*.ipa
+*.apk
+
+# Project files, i.e. `.project`, `.actionScriptProperties` and `.flexProperties`
+# should NOT be excluded as they contain compiler settings and other important
+# information for Eclipse / Flash Builder.
+
+# Virtualenv
+# https://realpython.com/python-virtual-environments-a-primer/#the-virtualenv-project
+.venv/
+venv/
+.python-version
+
+# pyenv: Simple Python Version Management
+pyvenv.cfg
+
+# pip: package installer for Python
+pip-selfcheck.json
+
+# Custom python interpreter
+.Python
+[Bb]in
+[Ii]nclude
+[Ll]ib
+[Ll]ib64
+[Ll]ocal
+[Ss]cripts
+
+.env
